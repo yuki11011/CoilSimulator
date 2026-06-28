@@ -89,8 +89,8 @@ void MainWindow::initializeScene() {
          2.0,
         -2.0,
          2.0,
-        20,
-        20
+        100,
+        100
     };
 
     m_scene.setCoilParameters(coilParameters);

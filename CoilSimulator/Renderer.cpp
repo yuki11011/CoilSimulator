@@ -1,6 +1,8 @@
 #include "Renderer.h"
 
 #include <numbers>
+#include <algorithm>
+#include <cmath>
 
 #include "FieldScene.h"
 
@@ -63,7 +65,7 @@ void Renderer::render(HDC deviceContext, const Viewport& viewport, const RECT& c
 void Renderer::drawAxes(HDC deviceContext, const Viewport& viewport) {
     const int savedState{ SaveDC(deviceContext) };
 
-    HPEN axisPen{ CreatePen(PS_SOLID, 1, RGB(170, 170, 170)) };
+    HPEN axisPen{ CreatePen(PS_SOLID, 2, RGB(0, 0, 0)) };
 
     SelectObject(deviceContext, axisPen);
 
@@ -89,28 +91,31 @@ void Renderer::drawAxes(HDC deviceContext, const Viewport& viewport) {
 }
 
 void Renderer::drawVector(HDC deviceContext, const Viewport& viewport, const FieldSample& sample, double maximumMagnitude) {
-    constexpr double arrowLengthPixels{ 18.0 };
-
     const int savedState{ SaveDC(deviceContext) };
 
-    double logScale{
-        std::log(sample.magnitude / maximumMagnitude)
-    };
+    const double magnitudeRatio{ std::clamp(sample.magnitude / maximumMagnitude, 0.0, 1.0) };
 
-    auto lerp = [](int a, int b, double t){ return static_cast<int>(std::lround(a + (b - a) * t)); };
-    int r = lerp(0, 255, logScale);
-    int g = lerp(0, 0,   logScale); // íÜä‘êFÇí≤êÆâ¬
-    int b = lerp(255, 0,  logScale);
-    HPEN vectorPen = CreatePen(PS_SOLID, 1, RGB(r,g,b)) ;
+    constexpr double logarithmicStrength{ 99.0 };
+
+    const double colorScale{ std::log1p(logarithmicStrength * magnitudeRatio) / std::log1p( logarithmicStrength) };
+
+    auto lerp = [](int a, int b, double t) { return static_cast<int>(std::lround(a + (b - a) * t)); };
+    const int red{ lerp(0, 255, colorScale) };
+    const int blue{ lerp(255, 0, colorScale) };
+
+    HPEN vectorPen = CreatePen(PS_SOLID, 1, RGB(red ,0 ,blue)) ;
 
     SelectObject(deviceContext, vectorPen);
 
     const ScreenPoint vectorStart{ viewport.worldToScreen(sample.pos) };
 
-    Vec2 direction{ sample.field.x / sample.magnitude, sample.field.y / sample.magnitude };
+    const Vec2 direction{ sample.field.x / sample.magnitude, sample.field.y / sample.magnitude };
+    const double strength{ std::clamp(sample.magnitude / maximumMagnitude, 0.0, 1.0) };
+    constexpr double maximumArrowLength{ 18.0 };
+    const double arrowLength{ maximumArrowLength * strength };
     const ScreenPoint vectorEnd{
-        static_cast<int>(std::lround(vectorStart.x + direction.x * arrowLengthPixels)),
-        static_cast<int>(std::lround(vectorStart.y - direction.y * arrowLengthPixels))
+        static_cast<int>(std::lround(vectorStart.x + direction.x * arrowLength)),
+        static_cast<int>(std::lround(vectorStart.y - direction.y * arrowLength))
     };
 
     drawLine(deviceContext, vectorStart, vectorEnd);
