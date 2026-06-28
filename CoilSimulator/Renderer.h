@@ -9,6 +9,7 @@ class Renderer {
 public:
     void render(
         HDC deviceContext,
+        const Viewport& viewport,
         const RECT& clientRect,
         const FieldScene& scene
     );
@@ -22,6 +23,7 @@ private:
     void drawVector(
         HDC deviceContext,
         const Viewport& viewport,
-        const FieldSample& sample
+        const FieldSample& sample,
+        double maximumMagnitude
     );
 };

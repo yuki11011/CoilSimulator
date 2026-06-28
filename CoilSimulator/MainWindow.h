@@ -1,14 +1,18 @@
 #pragma once
 
+#include "FieldScene.h"
+#include "Renderer.h"
 #include <Windows.h>
 
 class MainWindow {
 public:
-    explicit MainWindow(HINSTANCE hInstance);
+    explicit MainWindow(HINSTANCE hInstance)
+        : m_instance{ hInstance } {
+    };
 
     bool create(int nCmdShow);
 
-    HWND handle() const;
+    HWND handle() const { return m_hwnd; };
 
 private:
     static LRESULT CALLBACK windowProcedure(
@@ -24,6 +28,14 @@ private:
         LPARAM lParam
     );
 
+    void initializeScene();
+
+    void handlePaint();
+
     HINSTANCE m_instance{};
     HWND m_hwnd{};
+
+    FieldScene m_scene{};
+    Viewport m_viewport{};
+    Renderer m_renderer{};
 };
