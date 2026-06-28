@@ -105,7 +105,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -120,11 +120,12 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Application.h" />
     <ClInclude Include="CoilParameters.h" />
     <ClInclude Include="FieldSampler.h" />
     <ClInclude Include="FieldScene.h" />
@@ -135,10 +136,12 @@
     <ClInclude Include="Viewport.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Application.cpp" />
     <ClCompile Include="FieldSampler.cpp" />
     <ClCompile Include="FieldScene.cpp" />
     <ClCompile Include="MagneticFieldModel.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MainWindow.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Viewport.cpp" />
   </ItemGroup>

@@ -1,20 +1,9 @@
 #include <iostream>
-#include "Vector.h"
-#include "MagneticFieldModel.h"
+#include "Application.h"
+#include <Windows.h>
 
-int main() {
-    double x{};
-    double z{};
+int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {
+    Application application{ hInstance };
 
-    std::cout << "Enter values of x, z of the observation point: ";
-    std::cin >> x;
-    std::cin >> z;
-    Vec2 observationPoint{ x, z };
-
-    CoilParameters parameters{};
-    MagneticFieldModel model{parameters};
-
-    Vec2 b{ model.fieldAt(observationPoint) };
-
-    std::cout << "B = (" << b.x << ", " << b.y << ")\n";
+    return application.run(nCmdShow);
 }

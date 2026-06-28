@@ -1,12 +1,12 @@
 #include "Viewport.h"
 
 ScreenPoint Viewport::worldToScreen(Vec2 pos) const {
-    const double normalizedX{ (pos.x - m_minimumX) / (m_maximumX - m_minimumY) };
+    const double normalizedX{ (pos.x - m_minimumX) / (m_maximumX - m_minimumX) };
     const double normalizedY{ (pos.y - m_minimumY) / (m_maximumY - m_minimumY) };
 
     return ScreenPoint{
         static_cast<int>(normalizedX * m_width),
-        static_cast<int>(normalizedY * (1 - m_height))
+        static_cast<int>((1.0 - normalizedY) * m_height)
     };
 }
 
