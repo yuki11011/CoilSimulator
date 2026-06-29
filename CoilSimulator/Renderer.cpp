@@ -114,8 +114,8 @@ void Renderer::drawVector(HDC deviceContext, const Viewport& viewport, const Fie
     constexpr double maximumArrowLength{ 18.0 };
     const double arrowLength{ maximumArrowLength * strength };
     const ScreenPoint vectorEnd{
-        static_cast<int>(std::lround(vectorStart.x + direction.x * arrowLength)),
-        static_cast<int>(std::lround(vectorStart.y - direction.y * arrowLength))
+        static_cast<int>(std::lround(vectorStart.x + direction.x * maximumArrowLength)),
+        static_cast<int>(std::lround(vectorStart.y - direction.y * maximumArrowLength))
     };
 
     drawLine(deviceContext, vectorStart, vectorEnd);
