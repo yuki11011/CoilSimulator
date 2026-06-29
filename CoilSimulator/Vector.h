@@ -9,6 +9,22 @@ struct Vec2 {
     double magnitude() const {
         return std::sqrt(x * x + y * y);
     }
+
+    double dot(const Vec2& right) const {
+        return x * right.x + y * right.y;
+    }
+
+    Vec2 operator+(const Vec2& other) const {
+        return Vec2{ x + other.x, y + other.y };
+    }
+
+    Vec2 operator-(const Vec2& other) const {
+        return Vec2{ x - other.x, y - other.y };
+    }
+
+    Vec2 operator*(double scaler) const {
+        return Vec2{ scaler * x, scaler * y };
+    }
 };
 
 struct Vec3 {
