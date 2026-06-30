@@ -3,6 +3,11 @@
 #include <numbers>
 #include <algorithm>
 #include <cmath>
+#include <Windows.h>
+#include <string>
+#include <iostream>
+#include <sstream>
+#include <iomanip>
 
 #include "FieldScene.h"
 
@@ -18,6 +23,34 @@ inline static void drawLine(
     LineTo(
         deviceContext,
         end.x, end.y
+    );
+}
+
+inline static void drawBox(
+    HDC deviceContext,
+    ScreenPoint center,
+    int size
+) {
+    MoveToEx(
+        deviceContext,
+        center.x - size / 2, center.y - size / 2,
+        nullptr
+    );
+    LineTo(
+        deviceContext,
+        center.x + size / 2, center.y - size / 2
+    );
+    LineTo(
+        deviceContext,
+        center.x + size / 2, center.y + size / 2
+    );
+    LineTo(
+        deviceContext,
+        center.x - size / 2, center.y + size / 2
+    ); 
+    LineTo(
+        deviceContext,
+        center.x - size / 2, center.y - size / 2
     );
 }
 
@@ -60,6 +93,35 @@ void Renderer::render(HDC deviceContext, const Viewport& viewport, const RECT& c
     for (const auto& sample : scene.samples()) {
         drawVector(deviceContext, viewport, sample, maximumMagnitude);
     }
+
+    maximumMagnitude = 0.0;
+    for (const auto& sample : scene.integrationSamples()) {
+        if (std::abs(sample.contribution) > maximumMagnitude) {
+            maximumMagnitude = std::abs(sample.contribution);
+        }
+    }
+
+    for (const auto& sample : scene.integrationSamples()) {
+        drawMagneticFieldAndIntegrationPath(deviceContext, viewport, sample, maximumMagnitude);
+    }
+
+    int graphWidth{ 400 };
+    int graphHeight{ 100 };
+    int graphHorizontalPadding{ 20 };
+    int graphVerticalPadding{ 20 };
+
+    int clientWidth{ clientRect.right - clientRect.left };
+    int clientHeight{ clientRect.bottom - clientRect.top };
+
+    RECT graphRect{
+        clientRect.right - graphWidth - graphHorizontalPadding,
+        clientRect.top + graphVerticalPadding,
+        clientRect.right - graphHorizontalPadding,
+        clientRect.top + graphHeight + graphVerticalPadding
+    };
+    drawContributionGraph(deviceContext, graphRect, scene.integrationSamples(), maximumMagnitude);
+
+    showIntegrationResult(deviceContext, clientRect, scene.integrationValue());
 }
 
 void Renderer::drawAxes(HDC deviceContext, const Viewport& viewport) {
@@ -103,7 +165,7 @@ void Renderer::drawVector(HDC deviceContext, const Viewport& viewport, const Fie
     const int red{ lerp(0, 255, colorScale) };
     const int blue{ lerp(255, 0, colorScale) };
 
-    HPEN vectorPen = CreatePen(PS_SOLID, 1, RGB(red ,0 ,blue)) ;
+    HPEN vectorPen{ CreatePen(PS_SOLID, 1, RGB(red, 0, blue)) };
 
     SelectObject(deviceContext, vectorPen);
 
@@ -124,4 +186,111 @@ void Renderer::drawVector(HDC deviceContext, const Viewport& viewport, const Fie
     RestoreDC(deviceContext, savedState);
 
     DeleteObject(vectorPen);
+}
+
+void Renderer::drawMagneticFieldAndIntegrationPath(HDC deviceContext, const Viewport& viewport, const IntegrationSample& sample, double maximumMagnitude) {
+    const int savedState{ SaveDC(deviceContext) };
+
+    const HPEN vectorPen{ CreatePen(PS_SOLID, 1, RGB(0, 255, 0)) };
+
+    SelectObject(deviceContext, vectorPen);
+
+    double length{ 15.0 };
+    ScreenPoint vectorStart{ viewport.worldToScreen(sample.pos) };
+    Vec2 direction{ sample.magneticField.x / sample.magneticField.magnitude(), sample.magneticField.y / sample.magneticField.magnitude() };
+    ScreenPoint vectorEnd{ 
+        static_cast<int>(std::lround(vectorStart.x + direction.x * length)),
+        static_cast<int>(std::lround(vectorStart.y - direction.y * length)) 
+    };
+
+    drawLine(deviceContext, vectorStart, vectorEnd);
+    drawArrowHead(deviceContext, vectorStart, vectorEnd);
+
+    DeleteObject(vectorPen);
+
+    const HPEN pathPen{ CreatePen(PS_SOLID, 1, RGB(50, 50, 50)) };
+
+    SelectObject(deviceContext, pathPen);
+
+    const ScreenPoint pathPoint{ viewport.worldToScreen(sample.pos) };
+    drawBox(deviceContext, pathPoint, 2);
+
+    DeleteObject(pathPen);
+
+    RestoreDC(deviceContext, savedState);
+}
+
+void Renderer::drawContributionGraph(HDC deviceContext, RECT graphRect, const std::vector<IntegrationSample>& samples, double maximumMagnitude) {
+    const int savedState{ SaveDC(deviceContext) };
+
+    int horizontalPadding{ 30 };
+    int verticalPadding{ 30 };
+    int graphWidth{ graphRect.right - graphRect.left - 2 * horizontalPadding };
+    int graphHeight{ graphRect.bottom - graphRect.top - 2 * verticalPadding };
+
+    // ”wŒi‚ð•`‰æ
+    HPEN graphFramePen{ CreatePen(PS_SOLID, 1, RGB(0, 0, 0)) };
+    HBRUSH graphBackgroundBrush{ CreateSolidBrush(RGB(255, 255, 255)) };
+
+    SelectObject(deviceContext, graphFramePen);
+    SelectObject(deviceContext, graphBackgroundBrush);
+
+    Rectangle(deviceContext, graphRect.left, graphRect.top, graphRect.right, graphRect.bottom);
+
+    DeleteObject(graphFramePen);
+    DeleteObject(graphBackgroundBrush);
+
+    // ‰¡Ž²‚ð•`‰æ
+    HPEN graphAxisPen{ CreatePen(PS_DOT, 1, RGB(0, 0, 0)) };
+
+    SelectObject(deviceContext, graphAxisPen);
+
+    MoveToEx(deviceContext, graphRect.left + horizontalPadding, graphRect.top + graphHeight / 2 + verticalPadding, nullptr);
+    LineTo(deviceContext, graphRect.right - horizontalPadding, graphRect.top + graphHeight / 2 + verticalPadding);
+
+    DeleteObject(graphAxisPen);
+
+    // ƒOƒ‰ƒt‚ð•`‰æ
+    double deltaX{ static_cast<double>(graphWidth) / samples.size() };
+
+    for (int i{ 0 }; i < samples.size(); ++i) {
+        double normalizedContribution{ samples[i].contribution / maximumMagnitude };
+        SetPixelV(
+            deviceContext,
+            static_cast<int>(graphRect.left + horizontalPadding + deltaX * i),
+            static_cast<int>(graphRect.top + static_cast<double>(graphHeight) / 2 + verticalPadding - normalizedContribution * graphHeight),
+            RGB(255, 0, 0)
+        );
+    }
+
+    // ƒOƒ‰ƒt‚ÌŽ²ƒ‰ƒxƒ‹‚ð•\Ž¦
+    std::wostringstream oss;
+    oss << std::scientific << std::setprecision(4) << maximumMagnitude;
+
+    TextOutW(deviceContext, graphRect.left, graphRect.top, oss.str().c_str(), static_cast<int>(oss.str().size()));
+
+    TEXTMETRIC tm{};
+    GetTextMetricsW(deviceContext, &tm);
+    TextOutW(deviceContext, graphRect.left, graphRect.bottom - tm.tmHeight, (L"-" + oss.str()).c_str(), static_cast<int>(oss.str().size() + 1));
+
+    RestoreDC(deviceContext, savedState);
+}
+
+void Renderer::showIntegrationResult(HDC deviceContext, RECT clientRect, double integration) {
+    std::wostringstream oss;
+    oss << std::scientific << std::setprecision(10) << integration;
+
+    std::wstring label{ L"Integraion result: " };
+    TextOutW(deviceContext, clientRect.left, clientRect.top, (label + oss.str()).c_str(), static_cast<int>(label.size() + oss.str().size()));
+    
+    constexpr double vacuumPermeability{ 4 * std::numbers::pi * 1.0e-7 };
+    oss.str(L"");
+    oss.clear();
+    oss << std::scientific << std::setprecision(14) << integration / vacuumPermeability;
+
+    label = L"result / ƒÊ_0: ";
+
+    TEXTMETRIC tm{};
+    GetTextMetricsW(deviceContext, &tm);
+    TextOutW(deviceContext, clientRect.left, clientRect.top + tm.tmHeight, (label + oss.str()).c_str(), static_cast<int>(label.size() + oss.str().size()));
 }

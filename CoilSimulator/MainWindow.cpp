@@ -18,7 +18,7 @@ bool MainWindow::create(int nCmdShow) {
     m_hwnd = CreateWindowEx(
         0,
         className,
-        L"電界シミュレータ",
+        L"磁界シミュレータ",
         WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
         nullptr, nullptr, m_instance, this
@@ -85,16 +85,23 @@ void MainWindow::initializeScene() {
     };
 
     SamplingDesc samplingDesc{
-        -2.0,
-         2.0,
-        -2.0,
-         2.0,
-        100,
-        100
+        -2.0, // 最小のx
+         2.0, // 最大のx
+        -2.0, // 最小のy
+         2.0, // 最大のy
+        100, // 水平方向の格子点の数
+        100 // 垂直方向の格子点の数
+    };
+
+    PathDescriptor pathDesc{
+        2.5, // 半径
+        Vec2{ 0.0, 0.0 }, // 中心
+        512 // 積分の分割数
     };
 
     m_scene.setCoilParameters(coilParameters);
     m_scene.setSamplingDesc(samplingDesc);
+    m_scene.setPathDescriptor(pathDesc);
 
     m_scene.rebuild();
 

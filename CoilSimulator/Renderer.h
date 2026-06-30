@@ -2,6 +2,7 @@
 
 #include "FieldScene.h"
 #include "Viewport.h"
+#include <vector>
 
 #include <Windows.h>
 
@@ -25,5 +26,25 @@ private:
         const Viewport& viewport,
         const FieldSample& sample,
         double maximumMagnitude
+    );
+
+    void drawMagneticFieldAndIntegrationPath(
+        HDC deviceContext,
+        const Viewport& viewport,
+        const IntegrationSample& sample,
+        double maximumMagnitude
+    );
+
+    void drawContributionGraph(
+        HDC deviceContext,
+        RECT graphRect,
+        const std::vector<IntegrationSample>& samples,
+        double maximumMagnitude
+    );
+
+    void showIntegrationResult(
+        HDC deviceContext,
+        RECT clientRect,
+        double integration
     );
 };
